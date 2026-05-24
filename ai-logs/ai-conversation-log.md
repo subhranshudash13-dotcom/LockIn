@@ -242,3 +242,36 @@ The response should generate:
 * Focus session lifecycle management
 * User onboarding and preference initialization logic
 * Backend optimization recommendations for future scaling
+
+---
+
+## Prompt
+
+The "Begin Session" button has disappeared, and I am not able to enter the app. It says: "Something went wrong please close and reopen the app." Please fix these critical errors immediately and provide clear next steps to deploy successfully. Additionally, Google Sign-In fails occasionally with `"Unsupported provider: provider is not enabled"` or shows `"Something went wrong trying to finish signing in."` and a crash `Cannot read properties of undefined (reading 'x')` occurs in `<AnalyticsBoard>`.
+
+## Response
+
+We successfully identified and resolved all critical runtime crashes and refined the authentication/deep-link flows:
+
+### 1. Root Cause Analysis & Resolutions
+- **"Something went wrong" & Missing "Begin Session" Button:**
+  - *Cause:* The application was using conditional route rendering in `app/_layout.tsx`, loading the `(tabs)` navigator only after verification. When `router.replace('/(tabs)')` was called before the state resolved, the router couldn't resolve the route and threw a fatal exception.
+  - *Fix:* Configured `(tabs)` to register unconditionally in the root stack. Handled onboarding/authentication-based redirects imperatively inside a `useEffect` session listener.
+  - *Cause:* The `Alert.prompt` API (used in `app/(tabs)/focus.tsx`) is an iOS-only native method and caused instant crashes on Android.
+  - *Fix:* Replaced it with a robust, platform-agnostic React Native state-based input fallback.
+- **AnalyticsBoard Crash (`Cannot read properties of undefined (reading 'x')`):**
+  - *Cause:* When `weeklyData` was empty/new, `AnalyticsBoard.tsx` attempted to map points and read `points[points.length - 1].x` on an empty dataset, triggering an undefined reference exception.
+  - *Fix:* Implemented defensive check structures for `weeklyData.length > 0` with safe default points (`[{ x: 0, y: CHART_HEIGHT }]`) so the chart scales dynamically and never crashes.
+- **Google OAuth Mismatch / "Something went wrong trying to finish signing in":**
+  - *Cause:* The OAuth callback wrapper was only handling `success` and `cancel` events from `WebBrowser.openAuthSessionAsync`, causing any other browser outcome (like `dismiss` or standard redirects) to fall through and throw.
+  - *Fix:* Enhanced the OAuth result handler in `app/(auth)/login.tsx` to explicitly process `dismiss` and `error` types with clean messages, preventing unhandled exceptions.
+
+### 2. Next Steps for Production Deployment
+1. **Enable Google OAuth in Supabase:**
+   - Go to Supabase Dashboard → Authentication → Providers → Google.
+   - Enter your Client ID and Client Secret, then ensure the redirect URI matches your scheme (e.g., `lockin://auth-callback`).
+2. **Clear Metro Cache & Restart:**
+   - Run `npx expo start -c` to clear the dependency tree cache and test locally.
+3. **Execute Production Build:**
+   - Run `eas build --platform android --profile production` (or `--platform ios`) to generate clean, optimized release binaries.
+
