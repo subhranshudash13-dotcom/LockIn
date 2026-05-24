@@ -1,199 +1,102 @@
-import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator } from 'react-native'
-import { router, useLocalSearchParams } from 'expo-router'
+import React from 'react'
+import { StyleSheet, View, ScrollView, Pressable } from 'react-native'
+import { Text } from '@/components/ui/Text'
+import { useLocalSearchParams, router } from 'expo-router'
+import { useItem, useItemTasks } from '@/hooks/useItems'
+import { BG, SURFACE, TEXT_SECONDARY, TEXT_TERTIARY, ACCENT, SPACING_LG, SPACING_MD } from '@/lib/theme'
+import { statusLabel } from '@/lib/mockData'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Text } from '@/components/ui/Text'
-import { Card } from '@/components/ui/Card'
-import {
-    BG,
-    BORDER,
-    SUCCESS,
-    WARNING,
-    ERROR,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_TERTIARY,
-    ACCENT,
-} from '@/lib/theme'
 import StatusBadge from '@/components/ui/StatusBadge'
-import { statusLabel, type ItemStatus, type TaskItem } from '@/lib/mockData'
-import { useItem, useItemTasks } from '@/hooks/useItems'
 
+/**
+ * Item Detail Screen
+ * Shows details, metrics, and tasks for a specific item.
+ */
 export default function DetailScreen() {
-    const insets = useSafeAreaInsets()
-    const { id } = useLocalSearchParams<{ id: string }>()
-
-    const { data: item, isLoading } = useItem(id)
-    const { data: tasks = [] } = useItemTasks(id)
-
-    if (isLoading) {
-        return (
-            <View style={[s.centered, { backgroundColor: BG }]}>
-                <ActivityIndicator color={ACCENT} />
-            </View>
-        )
-    }
-
-    if (!item) {
-        return (
-            <View style={[s.centered, { backgroundColor: BG }]}>
-                <Text style={s.notFoundTitle}>Item not found</Text>
-                <Pressable onPress={() => router.back()} style={s.notFoundBtn}>
-                    <Text style={s.notFoundBtnText}>Go back</Text>
-                </Pressable>
-            </View>
-        )
-    }
-
+  const { id } = useLocalSearchParams<{ id: string }>()
+  const insets = useSafeAreaInsets()
+  const { data: item, isLoading } = useItem(id!)
+  const { data: tasks } = useItemTasks(id!)
+  
+  if (isLoading || !item) {
     return (
-        <View style={{ flex: 1, backgroundColor: BG }}>
-            <View style={[s.header, { paddingTop: insets.top + 8 }]}>
-                <Pressable onPress={() => router.back()} hitSlop={12}>
-                    <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.6)" />
-                </Pressable>
-                <Text style={s.headerTitle} numberOfLines={1}>{item.name}</Text>
-                <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView
-                contentContainerStyle={[s.body, { paddingBottom: insets.bottom + 28 }]}
-                showsVerticalScrollIndicator={false}
-            >
-                <Card style={s.summaryCard}>
-                    <View style={s.summaryTop}>
-                        <StatusBadge status={item.status} label={statusLabel(item.status)} />
-                        <Text style={s.updatedText}>Updated {item.updatedAt}</Text>
-                    </View>
-
-                    <Text style={s.summaryText}>{item.summary}</Text>
-
-                    <View style={s.metricsRow}>
-                        <MetricItem label="Completion" value={`${item.completion}%`} />
-                        <MetricItem label="Health" value={`${item.health}`} />
-                        <MetricItem label="Active users" value={`${item.activeUsers}`} />
-                    </View>
-                </Card>
-
-                <Text style={s.sectionTitle}>Tasks</Text>
-                <Card compact style={s.listCard}>
-                    {tasks.map((task, index) => (
-                        <View key={task.id} style={[s.taskRow, index < tasks.length - 1 && s.taskDivider]}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={s.taskTitle}>{task.title}</Text>
-                                <Text style={s.taskSub}>{task.state} · Due {task.dueDate}</Text>
-                            </View>
-                            <View style={[s.priorityPill, priorityStyle(task)]}>
-                                <Text style={s.priorityText}>{task.priority}</Text>
-                            </View>
-                        </View>
-                    ))}
-                </Card>
-            </ScrollView>
-        </View>
+      <View style={[s.root, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: TEXT_TERTIARY }}>Loading project details...</Text>
+      </View>
     )
+  }
+
+  return (
+    <View style={s.root}>
+      <View style={[s.header, { paddingTop: insets.top + 20 }]}>
+        <Pressable onPress={() => router.back()} style={s.back}>
+          <Ionicons name="arrow-back" size={24} color={TEXT_SECONDARY} />
+        </Pressable>
+        <Text style={s.title}>{item.name}</Text>
+      </View>
+      
+      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}>
+        <View style={s.card}>
+          <View style={s.cardHeader}>
+             <StatusBadge status={item.status as any} label={statusLabel(item.status)} />
+             <Text style={s.date}>Updated {item.updatedAt}</Text>
+          </View>
+          <Text style={s.desc}>{item.summary}</Text>
+          
+          <View style={s.stats}>
+             <StatItem label="Completion" value={`${item.completion}%`} />
+             <StatItem label="Health" value={`${item.health}%`} />
+             <StatItem label="Active" value={String(item.activeUsers)} />
+          </View>
+        </View>
+
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Tasks</Text>
+          {tasks?.map(task => (
+            <View key={task.id} style={s.taskRow}>
+               <Ionicons 
+                name={task.state === 'done' ? "checkbox" : "square-outline"} 
+                size={20} 
+                color={task.state === 'done' ? ACCENT : TEXT_TERTIARY} 
+               />
+               <Text style={[s.taskTitle, task.state === 'done' && s.taskCompleted]}>
+                {task.title}
+               </Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  )
 }
 
-function MetricItem({ label, value }: { label: string; value: string }) {
+function StatItem({ label, value }: { label: string, value: string }) {
     return (
-        <View style={s.metricItem}>
-            <Text style={s.metricLabel}>{label}</Text>
-            <Text style={s.metricValue}>{value}</Text>
+        <View style={s.stat}>
+            <Text style={s.statVal}>{value}</Text>
+            <Text style={s.statLabel}>{label}</Text>
         </View>
     )
-}
-
-
-
-function priorityStyle(task: TaskItem) {
-    switch (task.priority) {
-        case 'high':
-            return {
-                borderColor: `${ERROR}55`,
-                backgroundColor: `${ERROR}18`,
-            }
-        case 'medium':
-            return {
-                borderColor: `${WARNING}55`,
-                backgroundColor: `${WARNING}18`,
-            }
-        case 'low':
-            return {
-                borderColor: `${SUCCESS}55`,
-                backgroundColor: `${SUCCESS}18`,
-            }
-        default:
-            return {
-                borderColor: BORDER,
-                backgroundColor: 'rgba(255,255,255,0.05)',
-            }
-    }
 }
 
 const s = StyleSheet.create({
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-    notFoundTitle: { color: TEXT_PRIMARY, fontSize: 17, fontWeight: '700' },
-    notFoundBtn: {
-        borderWidth: 1,
-        borderColor: BORDER,
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-    },
-    notFoundBtnText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '600' },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingBottom: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(255,255,255,0.08)',
-    },
-    headerTitle: { flex: 1, color: TEXT_PRIMARY, fontSize: 16.5, fontWeight: '700', textAlign: 'center' },
-    body: { padding: 20, gap: 12 },
-    summaryCard: { gap: 8 },
-    summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    updatedText: { fontSize: 11, color: TEXT_TERTIARY },
-    summaryText: { fontSize: 13, lineHeight: 19, color: TEXT_SECONDARY },
-    metricsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 2 },
-    metricItem: {
-        minWidth: 120,
-        borderWidth: 1,
-        borderColor: BORDER,
-        borderRadius: 10,
-        paddingVertical: 8,
-        paddingHorizontal: 9,
-        backgroundColor: 'rgba(255,255,255,0.03)',
-    },
-    metricLabel: { fontSize: 11, color: TEXT_TERTIARY },
-    metricValue: { fontSize: 14, color: TEXT_PRIMARY, fontWeight: '700', marginTop: 2 },
-    sectionTitle: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: TEXT_TERTIARY,
-        letterSpacing: 0.8,
-        textTransform: 'uppercase',
-        marginTop: 3,
-    },
-    listCard: { padding: 0, overflow: 'hidden' },
-    taskRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 13,
-        paddingVertical: 11,
-    },
-    taskDivider: {
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: BORDER,
-    },
-    taskTitle: { fontSize: 13.5, color: TEXT_PRIMARY, fontWeight: '600' },
-    taskSub: { marginTop: 2, fontSize: 12, color: TEXT_SECONDARY },
-    priorityPill: {
-        borderWidth: 1,
-        borderRadius: 999,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    priorityText: { fontSize: 11, color: TEXT_PRIMARY, fontWeight: '700', textTransform: 'capitalize' },
+  root: { flex: 1, backgroundColor: BG },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING_LG, paddingBottom: SPACING_MD },
+  back: { marginRight: 16 },
+  title: { fontSize: 24, fontWeight: '900', color: '#fff', flex: 1 },
+  scroll: { paddingHorizontal: SPACING_LG, paddingTop: SPACING_MD, gap: 24 },
+  card: { backgroundColor: SURFACE, padding: 20, borderRadius: 24, gap: 16 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  date: { fontSize: 12, color: TEXT_TERTIARY },
+  desc: { fontSize: 15, color: TEXT_SECONDARY, lineHeight: 22 },
+  stats: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  stat: { alignItems: 'center' },
+  statVal: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  statLabel: { fontSize: 11, color: TEXT_TERTIARY, textTransform: 'uppercase', marginTop: 4 },
+  section: { gap: 12 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: TEXT_SECONDARY, textTransform: 'uppercase', letterSpacing: 1 },
+  taskRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: SURFACE, padding: 16, borderRadius: 16 },
+  taskTitle: { fontSize: 15, color: '#fff', fontWeight: '500' },
+  taskCompleted: { textDecorationLine: 'line-through', opacity: 0.5 },
 })

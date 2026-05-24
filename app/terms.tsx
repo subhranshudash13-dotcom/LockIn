@@ -1,76 +1,58 @@
-import { ScrollView, StyleSheet, View, Pressable } from 'react-native'
+import React from 'react'
+import { ScrollView, StyleSheet, View } from 'react-native'
+import { Text } from '@/components/ui/Text'
+import { BG, SURFACE, TEXT_SECONDARY, SPACING_LG, SPACING_MD } from '@/lib/theme'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Text } from '@/components/ui/Text'
-import { BG, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY } from '@/lib/theme'
+import { Pressable } from 'react-native'
 
 export default function TermsScreen() {
-    const insets = useSafeAreaInsets()
-
-    return (
-        <View style={{ flex: 1, backgroundColor: BG }}>
-            <View style={[s.header, { paddingTop: insets.top + 8 }]}>
-                <Pressable onPress={() => router.back()} hitSlop={12}>
-                    <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.6)" />
-                </Pressable>
-                <Text style={s.title}>Terms of Service</Text>
-                <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView
-                contentContainerStyle={[s.body, { paddingBottom: insets.bottom + 32 }]}
-                showsVerticalScrollIndicator={false}
-            >
-                <Text style={s.updated}>Last updated: {new Date().toLocaleDateString()}</Text>
-
-                <Text style={s.heading}>Use of the Template</Text>
-                <Text style={s.paragraph}>
-                    This project is distributed as starter software. You are responsible for customizing business logic,
-                    legal content, and service configurations before publishing to production environments.
-                </Text>
-
-                <Text style={s.heading}>Accounts and Access</Text>
-                <Text style={s.paragraph}>
-                    If authentication is enabled, users are responsible for maintaining the security of their login methods
-                    and for activity performed under their account.
-                </Text>
-
-                <Text style={s.heading}>Subscriptions</Text>
-                <Text style={s.paragraph}>
-                    Any billing and entitlement behavior depends on your configured payment provider. Ensure your pricing,
-                    cancellation terms, and renewal terms are clearly disclosed in your final app copy.
-                </Text>
-
-                <Text style={s.heading}>Service Availability</Text>
-                <Text style={s.paragraph}>
-                    Template components are provided without uptime guarantees. Integrations may be unavailable due to
-                    network conditions, external providers, or platform maintenance windows.
-                </Text>
-
-                <Text style={s.heading}>Liability and Compliance</Text>
-                <Text style={s.paragraph}>
-                    Replace this document with jurisdiction-appropriate legal terms reviewed by qualified counsel.
-                    This sample text is informational and not legal advice.
-                </Text>
-            </ScrollView>
+  const insets = useSafeAreaInsets()
+  
+  return (
+    <View style={s.root}>
+      <View style={[s.header, { paddingTop: insets.top + 20 }]}>
+        <Pressable onPress={() => router.back()} style={s.back}>
+          <Ionicons name="arrow-back" size={24} color={TEXT_SECONDARY} />
+        </Pressable>
+        <Text style={s.title}>Terms of Service</Text>
+      </View>
+      
+      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}>
+        <View style={s.card}>
+          <Text style={s.section}>License</Text>
+          <Text style={s.body}>
+            By using LockIn, you are granted a limited, non-exclusive license to use the app for personal productivity.
+          </Text>
+          
+          <Text style={s.section}>Premium</Text>
+          <Text style={s.body}>
+            Premium features are available via subscription through RevenueCat. Fees are non-refundable unless required by law.
+          </Text>
+          
+          <Text style={s.section}>Prohibited Use</Text>
+          <Text style={s.body}>
+            You may not reverse engineer, redistribute, or use the app for any illegal purposes.
+          </Text>
+          
+          <Text style={s.section}>Changes</Text>
+          <Text style={s.body}>
+            We reserve the right to modify these terms at any time. Continued use of the app constitutes acceptance.
+          </Text>
         </View>
-    )
+      </ScrollView>
+    </View>
+  )
 }
 
 const s = StyleSheet.create({
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingBottom: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(255,255,255,0.08)',
-    },
-    title: { color: TEXT_PRIMARY, fontSize: 17, fontWeight: '700' },
-    body: { padding: 24, gap: 10 },
-    updated: { color: TEXT_TERTIARY, fontSize: 12, marginBottom: 4 },
-    heading: { color: TEXT_PRIMARY, fontSize: 14.5, fontWeight: '700', marginTop: 5 },
-    paragraph: { color: TEXT_SECONDARY, fontSize: 13.5, lineHeight: 21 },
+  root: { flex: 1, backgroundColor: BG },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING_LG, paddingBottom: SPACING_MD },
+  back: { marginRight: 16 },
+  title: { fontSize: 24, fontWeight: '900', color: '#fff' },
+  scroll: { paddingHorizontal: SPACING_LG, paddingTop: SPACING_MD },
+  card: { backgroundColor: SURFACE, padding: SPACING_LG, borderRadius: 24 },
+  section: { fontSize: 18, fontWeight: '800', color: '#fff', marginTop: 24, marginBottom: 8 },
+  body: { fontSize: 15, color: TEXT_SECONDARY, lineHeight: 22 },
 })

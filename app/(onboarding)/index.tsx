@@ -1,46 +1,46 @@
-/**
- * Onboarding screen — runs once after first login.
- *
- * This template has a single onboarding step: collect the user's display name.
- * The step is optional (users can skip).
- *
- * To add more onboarding steps:
- *   1. Create app/(onboarding)/step2.tsx, step3.tsx, etc.
- *   2. Update this file to navigate to the next step instead of completing onboarding.
- *   3. Complete onboarding only in the last step.
- */
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
-  View, Pressable, TextInput, StyleSheet,
+  View, Pressable, TextInput as RNTextInput, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native'
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@/components/ui/Text'
 import { supabase } from '@/lib/supabase'
 import { track } from '@/lib/analytics'
-import { ACCENT, ACCENT_DIM, ACCENT_BORDER, BG, SURFACE, BORDER } from '@/lib/theme'
+import { ACCENT, ACCENT_DIM, ACCENT_BORDER, BG, SURFACE, BORDER, TEXT_SECONDARY, TEXT_TERTIARY } from '@/lib/theme'
 import { LinearGradient } from 'expo-linear-gradient'
 import { adjustBrightness } from '@/lib/utils'
 import { Fonts } from '@/lib/typography'
+import { usePersonalization } from '@/hooks/usePersonalization'
+import { Ionicons } from '@expo/vector-icons'
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets()
+  const { settings, updateSettings } = usePersonalization()
 
+  const [step, setStep] = useState<'name' | 'goal' | 'distractions' | 'style'>('name')
   const [displayName, setDisplayName] = useState('')
-  const [loading,     setLoading]     = useState(false)
-  const [error,       setError]       = useState<string | null>(null)
+  const [selectedGoal, setSelectedGoal] = useState('productivity')
+  const [distractionProfile, setDistractionProfile] = useState<string[]>([])
+  const [focusStyle, setFocusStyle] = useState('deep') // 'deep' | 'pomodoro'
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+  const nameInputRef = useRef<RNTextInput>(null)
 
-  track('onboarding_started')
-
-  async function complete(name?: string) {
+  async function complete() {
     setLoading(true)
     setError(null)
 
+    // 1. Update personalization
+    updateSettings({ focusGoal: selectedGoal })
+
+    // 2. Update Auth metadata
     const { error: err } = await supabase.auth.updateUser({
       data: {
         onboarding_completed: true,
-        full_name: name?.trim() || undefined,
+        full_name: displayName.trim() || undefined,
       },
     })
 
@@ -50,21 +50,44 @@ export default function OnboardingScreen() {
       return
     }
 
-    // Also upsert the profiles table (best-effort, non-blocking)
-    if (name?.trim()) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase
-            .from('profiles')
-            .upsert({ id: user.id, display_name: name.trim() })
-        }
-      } catch { /* profile upsert failure is non-fatal; metadata already saved above */ }
+    // 3. Update Profiles table
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+        await supabase
+          .from('profiles')
+          .upsert({ 
+            id: user.id, 
+            name: displayName.trim() || user.email?.split('@')[0],
+            metadata: { 
+                onboarding_completed: true, 
+                personalization: { 
+                    ...settings, 
+                    focusGoal: selectedGoal,
+                    distractionProfile,
+                    focusStyle
+                } 
+            } 
+          })
     }
 
-    track('onboarding_completed', { skipped: !name?.trim() })
+    track('onboarding_completed', { goal: selectedGoal, style: focusStyle })
     setLoading(false)
-    // _layout.tsx auth guard detects onboarding_completed = true and routes to (tabs)
+  }
+
+  const handleNext = () => {
+    if (step === 'name') {
+       if (!displayName.trim()) {
+           setError('Please enter your name to continue.')
+           return
+       }
+       setStep('goal')
+    } else if (step === 'goal') {
+       setStep('distractions')
+    } else if (step === 'distractions') {
+       setStep('style')
+    } else {
+       complete()
+    }
   }
 
   return (
@@ -72,101 +95,152 @@ export default function OnboardingScreen() {
       style={{ flex: 1, backgroundColor: BG }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={[s.root, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}>
-        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={s.content}>
-          {/* Header */}
-          <View style={s.header}>
-            <View style={[s.iconBadge, { backgroundColor: ACCENT_DIM, borderColor: ACCENT_BORDER }]}>
-              <Text style={{ fontSize: 28 }}>👋</Text>
+      <View style={[s.root, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 32 }]}>
+        
+        {step === 'name' ? (
+          <Animated.View key="name-step" entering={FadeInDown.duration(600)} style={s.content}>
+            <View style={s.header}>
+              <View style={[s.iconBadge, { backgroundColor: ACCENT_DIM, borderColor: ACCENT_BORDER }]}>
+                <Text style={{ fontSize: 28 }}>👋</Text>
+              </View>
+              <Text style={s.title}>What's your name?</Text>
+              <Text style={s.subtitle}>This is how you'll be identified in the global focus leaderboard.</Text>
             </View>
-            <Text style={s.title}>What should we call you?</Text>
-            <Text style={s.subtitle}>
-              This is optional — you can always change it later in your profile.
-            </Text>
-          </View>
 
-          {/* Name input */}
-          <View style={s.fieldGroup}>
-            <Text style={s.label}>YOUR NAME</Text>
-            <TextInput
-              value={displayName}
-              onChangeText={(v) => { setDisplayName(v); setError(null) }}
-              placeholder="Enter your name"
-              placeholderTextColor="rgba(255,255,255,0.18)"
-              style={s.input}
-              autoCapitalize="words"
-              returnKeyType="done"
-              onSubmitEditing={() => complete(displayName)}
-              autoFocus
-            />
-          </View>
+            <View style={s.fieldGroup}>
+              <RNTextInput
+                ref={nameInputRef}
+                value={displayName}
+                onChangeText={(v) => { setDisplayName(v); setError(null) }}
+                placeholder="Enter your name"
+                placeholderTextColor="rgba(255,255,255,0.18)"
+                style={s.input}
+                autoFocus
+                autoCapitalize="words"
+              />
+            </View>
+          </Animated.View>
+        ) : step === 'goal' ? (
+          <Animated.View key="goal-step" entering={FadeInUp.duration(600)} style={s.content}>
+             <View style={s.header}>
+              <View style={[s.iconBadge, { backgroundColor: ACCENT_DIM, borderColor: ACCENT_BORDER }]}>
+                <Ionicons name="compass-outline" size={32} color={ACCENT} />
+              </View>
+              <Text style={s.title}>Define your goal</Text>
+              <Text style={s.subtitle}>We'll personalize your experience based on your primary objective.</Text>
+            </View>
 
-          {error ? (
-            <Animated.View entering={FadeIn.duration(180)} style={s.errorBox}>
-              <Text style={{ color: '#f87171', fontSize: 13 }}>{error}</Text>
+            <View style={s.grid}>
+               <GoalCard 
+                  active={selectedGoal === 'productivity'} 
+                  title="Peak Productivity" icon="rocket-outline" 
+                  onPress={() => setSelectedGoal('productivity')}
+               />
+               <GoalCard 
+                  active={selectedGoal === 'mental'} 
+                  title="Mental Clarity" icon="leaf-outline" 
+                  onPress={() => setSelectedGoal('mental')}
+               />
+               <GoalCard 
+                  active={selectedGoal === 'coding'} 
+                  title="Deep Flow" icon="code-slash-outline" 
+                  onPress={() => setSelectedGoal('coding')}
+               />
+            </View>
+          </Animated.View>
+        ) : step === 'distractions' ? (
+          <Animated.View key="distraction-step" entering={FadeInUp.duration(600)} style={s.content}>
+             <View style={s.header}>
+              <View style={[s.iconBadge, { backgroundColor: ACCENT_DIM, borderColor: ACCENT_BORDER }]}>
+                <Ionicons name="shield-outline" size={32} color={ACCENT} />
+              </View>
+              <Text style={s.title}>Common Distractions</Text>
+              <Text style={s.subtitle}>What usually breaks your focus?</Text>
+            </View>
+            <View style={s.grid}>
+                {['Social Media', 'Video Streaming', 'Messaging', 'News'].map(d => (
+                    <GoalCard 
+                        key={d}
+                        active={distractionProfile.includes(d)}
+                        title={d}
+                        icon={d === 'Social Media' ? 'logo-instagram' : d === 'Messaging' ? 'chatbubble-outline' : 'videocam-outline'}
+                        onPress={() => setDistractionProfile(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])}
+                    />
+                ))}
+            </View>
+          </Animated.View>
+        ) : (
+          <Animated.View key="style-step" entering={FadeInUp.duration(600)} style={s.content}>
+             <View style={s.header}>
+              <View style={[s.iconBadge, { backgroundColor: ACCENT_DIM, borderColor: ACCENT_BORDER }]}>
+                <Ionicons name="flash-outline" size={32} color={ACCENT} />
+              </View>
+              <Text style={s.title}>Focus Protocol</Text>
+              <Text style={s.subtitle}>How do you prefer to work?</Text>
+            </View>
+            <View style={s.grid}>
+                <GoalCard 
+                    active={focusStyle === 'deep'} 
+                    title="Deep Work (Long blocks)" icon="infinite-outline" 
+                    onPress={() => setFocusStyle('deep')}
+                />
+                <GoalCard 
+                    active={focusStyle === 'pomodoro'} 
+                    title="Pomodoro (25/5 breaks)" icon="timer-outline" 
+                    onPress={() => setFocusStyle('pomodoro')}
+                />
+            </View>
+          </Animated.View>
+        )}
+
+        {error && (
+            <Animated.View entering={FadeIn.duration(200)} style={s.errorBox}>
+                <Text style={s.errorText}>{error}</Text>
             </Animated.View>
-          ) : null}
-        </Animated.View>
+        )}
 
-        {/* Bottom buttons */}
-        <Animated.View entering={FadeInDown.delay(300).duration(400)} style={s.buttons}>
-          <Pressable
-            onPress={() => complete(displayName)}
-            disabled={loading}
-            style={({ pressed }) => ({
-              opacity: loading ? 0.5 : pressed ? 0.85 : 1,
-              borderRadius: 16, overflow: 'hidden',
-            })}
-          >
-            <LinearGradient
-              colors={[ACCENT, adjustBrightness(ACCENT, -25)]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={s.primaryBtn}
-            >
-              {loading
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>
-                    {displayName.trim() ? 'Continue  →' : 'Get Started  →'}
-                  </Text>
-              }
-            </LinearGradient>
-          </Pressable>
-
-          <Pressable onPress={() => complete()} disabled={loading} style={{ alignItems: 'center', paddingVertical: 6 }}>
-            <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>Skip for now</Text>
-          </Pressable>
+        <Animated.View entering={FadeInDown.delay(200).duration(400)} style={s.footer}>
+           <Pressable
+              onPress={handleNext}
+              disabled={loading}
+              style={({ pressed }) => [s.primaryBtnWrap, pressed && { opacity: 0.8 }]}
+           >
+             <LinearGradient colors={[ACCENT, adjustBrightness(ACCENT, -25)]} style={s.primaryBtn}>
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>{step === 'style' ? 'Unlock Access' : 'Next Step'}</Text>}
+             </LinearGradient>
+           </Pressable>
         </Animated.View>
       </View>
     </KeyboardAvoidingView>
   )
 }
 
-// adjustBrightness imported from @/lib/utils
+function GoalCard({ active, title, icon, onPress }: any) {
+    return (
+        <Pressable onPress={onPress} style={[s.card, active && s.cardActive]}>
+            <Ionicons name={icon} size={24} color={active ? ACCENT : TEXT_TERTIARY} />
+            <Text style={[s.cardTitle, active && { color: '#fff' }]}>{title}</Text>
+        </Pressable>
+    )
+}
 
 const s = StyleSheet.create({
-  root: { flex: 1, paddingHorizontal: 24 },
-  content: { flex: 1, gap: 24, justifyContent: 'center' },
-  header: { gap: 12, alignItems: 'center', paddingBottom: 8 },
-  iconBadge: {
-    width: 80, height: 80, borderRadius: 24,
-    borderWidth: 1.5, alignItems: 'center', justifyContent: 'center',
-  },
-  title:    { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.38)', textAlign: 'center', lineHeight: 21, maxWidth: 280 },
-
-  fieldGroup: { gap: 8 },
-  label: { fontSize: 11, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' },
-  input: {
-    height: 52, backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1, borderColor: BORDER, borderRadius: 14,
-    paddingHorizontal: 18, color: '#fff', fontSize: 16,
-    fontFamily: Fonts.regular,
-  },
-  errorBox: {
-    backgroundColor: 'rgba(248,113,113,0.08)', borderRadius: 8,
-    borderWidth: 1, borderColor: 'rgba(248,113,113,0.2)',
-    paddingHorizontal: 14, paddingVertical: 10,
-  },
-  buttons:    { gap: 12 },
-  primaryBtn: { height: 56, alignItems: 'center', justifyContent: 'center' },
+  root: { flex: 1, paddingHorizontal: 24, justifyContent: 'space-between' },
+  content: { gap: 32 },
+  header: { gap: 12, alignItems: 'center' },
+  iconBadge: { width: 80, height: 80, borderRadius: 24, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 28, fontWeight: '900', color: '#fff', textAlign: 'center' },
+  subtitle: { fontSize: 15, color: TEXT_SECONDARY, textAlign: 'center', lineHeight: 22, maxWidth: 280 },
+  fieldGroup: { gap: 12 },
+  input: { height: 60, backgroundColor: SURFACE, borderRadius: 18, paddingHorizontal: 20, color: '#fff', fontSize: 16, borderWidth: 1, borderColor: BORDER },
+  grid: { gap: 16 },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: SURFACE, padding: 20, borderRadius: 20, gap: 16, borderWidth: 1, borderColor: 'transparent' },
+  cardActive: { borderColor: ACCENT, backgroundColor: 'rgba(245,158,11,0.05)' },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: TEXT_SECONDARY },
+  footer: { paddingBottom: 10 },
+  primaryBtnWrap: { borderRadius: 18, overflow: 'hidden' },
+  primaryBtn: { height: 60, alignItems: 'center', justifyContent: 'center' },
+  btnText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  errorBox: { backgroundColor: 'rgba(239,68,68,0.1)', padding: 12, borderRadius: 12, marginBottom: 10 },
+  errorText: { color: '#f87171', fontSize: 13, textAlign: 'center', fontWeight: '600' },
 })

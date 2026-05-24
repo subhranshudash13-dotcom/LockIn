@@ -166,6 +166,11 @@ const s = StyleSheet.create({
     height: 3, borderRadius: 2,
     backgroundColor: TAB_ACTIVE,
     marginBottom: 6,
+    shadowColor: TAB_ACTIVE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 5,
   },
   tabInner: {
     alignItems: 'center', justifyContent: 'center', gap: 5,

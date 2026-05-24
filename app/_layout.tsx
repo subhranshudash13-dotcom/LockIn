@@ -10,7 +10,7 @@ const routingInstrumentation = Sentry.reactNavigationIntegration()
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
   environment: __DEV__ ? 'development' : 'production',
-  enabled: !__DEV__ && !!process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enabled: true,
   integrations: [routingInstrumentation],
   tracesSampleRate: 0,
 })
@@ -41,6 +41,7 @@ import OfflineBanner from '@/components/OfflineBanner'
 import OfflineOverlay from '@/components/OfflineOverlay'
 import { Text } from '@/components/ui/Text'
 import { BG } from '@/lib/theme'
+import { useLockInStore } from '@/lib/useLockInStore'
 
 // ─── Error boundary ───────────────────────────────────────────────────────────
 // React requires a class component to catch render errors — hooks cannot do this.
@@ -125,10 +126,9 @@ function RootLayout() {
     Inter_800ExtraBold,
   })
 
-  // null = still checking; true/false = auth state known
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null)
-  // null = loading; false = not completed; true = completed
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
+  const setSession = useLockInStore((state) => state.setSession)
   const [i18nReady, setI18nReady] = useState(false)
 
   useEffect(() => {
@@ -151,44 +151,44 @@ function RootLayout() {
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthed(!!session)
-      if (session?.user) {
-        setOnboardingCompleted(session.user.user_metadata?.onboarding_completed === true)
-        loginRevenueCat(session.user.id)
-        identify(
-          session.user.id,
-          session.user.email ? { email: session.user.email } : undefined
-        )
-      } else {
-        setOnboardingCompleted(null)
-      }
-    }).catch(() => {
-      console.warn('[Auth] Could not reach Supabase — defaulting to signed-out state.')
-      setIsAuthed(false)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setIsAuthed(true)
-        setOnboardingCompleted(session.user.user_metadata?.onboarding_completed === true)
-        loginRevenueCat(session.user.id)
-        identify(
-          session.user.id,
-          session.user.email ? { email: session.user.email } : undefined
-        )
-      }
-      if (event === 'SIGNED_OUT') {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const authed = !!session
+        setIsAuthed(authed)
+        
+        if (session?.user) {
+          setSession(session)
+          setOnboardingCompleted(session.user.user_metadata?.onboarding_completed === true)
+          loginRevenueCat(session.user.id)
+          identify(session.user.id, session.user.email ? { email: session.user.email } : undefined)
+        } else {
+          setSession(null)
+          setOnboardingCompleted(null)
+        }
+      } catch (err) {
+        console.warn('[Auth] Session check failed:', err)
         setIsAuthed(false)
+      }
+    }
+
+    checkSession()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] Event: ${event}`)
+      const authed = !!session
+      setIsAuthed(authed)
+
+      if (authed && session?.user) {
+        setSession(session)
+        setOnboardingCompleted(session.user.user_metadata?.onboarding_completed === true)
+        loginRevenueCat(session.user.id)
+        identify(session.user.id, session.user.email ? { email: session.user.email } : undefined)
+      } else {
+        setSession(null)
         setOnboardingCompleted(null)
         logoutRevenueCat()
         resetIdentity()
-      }
-      if (event === 'USER_UPDATED' && session?.user) {
-        setOnboardingCompleted(session.user.user_metadata?.onboarding_completed === true)
-      }
-      if (event === 'TOKEN_REFRESHED' && session?.user) {
-        setOnboardingCompleted(session.user.user_metadata?.onboarding_completed === true)
       }
     })
 
@@ -228,36 +228,26 @@ function RootLayout() {
                   <ThemeProvider value={customDarkTheme}>
                     <View style={{ flex: 1, backgroundColor: BG }}>
                       <Stack ref={navigationRef} screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: BG } }}>
+                        {/* ── Landing & Auth ── */}
+                        <Stack.Screen name="index" />
+                        <Stack.Screen name="(auth)" />
 
-                        {/* ── Unauthenticated screens ──────────────────────────────────
-                        Accessible only when signed out. When isAuthed flips to true,
-                        Stack.Protected removes these and Expo Router auto-redirects to
-                        the first accessible authenticated screen. */}
-                        <Stack.Protected guard={!isAuthed}>
-                          <Stack.Screen name="index" />
-                          <Stack.Screen name="(auth)" />
-                        </Stack.Protected>
-
-                        {/* ── Onboarding screens ───────────────────────────────────────
-                        Shown when signed in but onboarding not yet completed. */}
-                        <Stack.Protected guard={!!isAuthed && onboardingCompleted === false}>
+                        {/* ── Onboarding ── */}
+                        {isAuthed && onboardingCompleted === false && (
                           <Stack.Screen name="(onboarding)" />
-                        </Stack.Protected>
+                        )}
 
-                        {/* ── Authenticated screens ────────────────────────────────────
-                        Accessible only when signed in + onboarding done. */}
-                        <Stack.Protected guard={!!isAuthed && onboardingCompleted === true}>
-                          <Stack.Screen name="(tabs)" />
-                          <Stack.Screen name="detail/[id]" />
-                          <Stack.Screen name="settings" />
-                          <Stack.Screen name="support" />
-                        </Stack.Protected>
-
-                        {/* ── Always-public screens — declared LAST so they don't become
-                        the default redirect target when a protected group flips. ── */}
+                        {/* ── Infrastructure ── */}
                         <Stack.Screen name="upgrade" />
                         <Stack.Screen name="privacy" />
                         <Stack.Screen name="terms" />
+                        <Stack.Screen name="settings" />
+                        <Stack.Screen name="support" />
+
+                        {/* ── Main App ── */}
+                        {isAuthed && onboardingCompleted === true && (
+                          <Stack.Screen name="(tabs)" />
+                        )}
                       </Stack>
                       <ScreenTracker />
                       <OfflineBanner />

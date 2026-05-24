@@ -27,6 +27,12 @@ type EventName =
   | 'otp_sent'
   | 'login_success'
   | 'logout'
+  | 'google_login_success'
+  | 'google_login_failed'
+  | 'google_login_error'
+  // Focus
+  | 'focus_session_started'
+  | 'focus_session_completed'
   // Onboarding
   | 'onboarding_started'
   | 'onboarding_completed'

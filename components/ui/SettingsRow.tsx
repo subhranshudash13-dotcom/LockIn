@@ -1,17 +1,18 @@
 import { Pressable, StyleSheet, ViewStyle } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Text } from '@/components/ui/Text'
-import { BORDER, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY } from '@/lib/theme'
+import { BORDER, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, ACCENT } from '@/lib/theme'
 
 interface SettingsRowProps {
     icon: string
     label: string
+    value?: string
     onPress: () => void
     last?: boolean
     style?: ViewStyle
 }
 
-export default function SettingsRow({ icon, label, onPress, last, style }: SettingsRowProps) {
+export default function SettingsRow({ icon, label, value, onPress, last, style }: SettingsRowProps) {
     return (
         <Pressable
             onPress={onPress}
@@ -19,6 +20,7 @@ export default function SettingsRow({ icon, label, onPress, last, style }: Setti
         >
             <Ionicons name={icon as any} size={18} color={TEXT_SECONDARY} />
             <Text style={s.label}>{label}</Text>
+            {value && <Text style={s.value}>{value}</Text>}
             <Ionicons name="chevron-forward" size={15} color={TEXT_TERTIARY} />
         </Pressable>
     )
@@ -40,5 +42,11 @@ const s = StyleSheet.create({
         flex: 1,
         fontSize: 14.5,
         color: TEXT_PRIMARY,
+    },
+    value: {
+        fontSize: 13,
+        color: ACCENT,
+        fontWeight: '600',
+        marginRight: 4,
     },
 })

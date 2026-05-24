@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "MyApp",
-    "slug": "my-app",
+    "name": "LockIn",
+    "slug": "lockin",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "myapp",
+    "scheme": "lockin",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
@@ -14,13 +14,13 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yourcompany.myapp",
+      "bundleIdentifier": "com.lockin.app",
       "associatedDomains": [
-        "applinks:REPLACE_WITH_YOUR_DOMAIN"
+        "applinks:lockin.app"
       ]
     },
     "android": {
-      "package": "com.yourcompany.myapp",
+      "package": "com.lockin.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0d0d0d"
@@ -30,20 +30,20 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
-      "androidStatusBar": {
-        "barStyle": "light-content",
-        "backgroundColor": "#0d0d0d",
-        "translucent": true
-      },
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "myapp" }
+            {
+              "scheme": "lockin"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -64,22 +64,15 @@
       "expo-secure-store",
       "expo-localization",
       "expo-font",
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "react-native",
-          "organization": "your-org"
-        }
-      ],
-      "@sentry/react-native"
+
+      "expo-web-browser"
     ],
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
+        "projectId": "53b0bb83-703a-40b5-9cf9-627c9e7880de"
       }
     },
-    "owner": "REPLACE_WITH_YOUR_EXPO_OWNER"
+    "owner": "ssd1713"
   }
 }

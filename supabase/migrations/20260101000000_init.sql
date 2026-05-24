@@ -8,7 +8,7 @@
 -- One row per auth.users entry. Auto-created via trigger on signup.
 -- Add app-specific columns here (e.g., bio, preferences, credits, etc.)
 
-create table public.profiles (
+create table if not exists public.profiles (
   id           uuid        primary key references auth.users(id) on delete cascade,
   display_name text,
   avatar_url   text,
@@ -54,6 +54,8 @@ begin
   return new;
 end;
 $$;
+
+drop trigger if exists on_auth_user_created on auth.users;
 
 create trigger on_auth_user_created
   after insert on auth.users

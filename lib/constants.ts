@@ -11,20 +11,20 @@
  */
 
 /** Display name shown in headers, onboarding, and the landing page. */
-export const APP_NAME = 'MyApp'
+export const APP_NAME = 'LockIn'
 
 /** URL scheme matching expo.scheme in app.json — used for OAuth deep link callbacks. */
-export const APP_SCHEME = 'myapp'
+export const APP_SCHEME = 'lockin'
 
 /** Support email shown on the Support screen. */
-export const APP_SUPPORT_EMAIL = 'support@example.com'
+export const APP_SUPPORT_EMAIL = 'support@lockin.app'
 
 /** Documentation URL shown on the Support screen. */
-export const APP_DOCS_URL = 'https://example.com/docs'
+export const APP_DOCS_URL = 'https://lockin.app/docs'
 
 /** One-liner shown on the landing page below the app name. */
-export const APP_TAGLINE = 'Your next great idea starts here.'
+export const APP_TAGLINE = 'Enter The Flow. Reclaim Your Reality.'
 
 /** Short description used in marketing / onboarding contexts. */
 export const APP_DESCRIPTION =
-  'A production-ready mobile app template with auth, subscriptions, analytics, and polished UI — ready from day one.'
+  'A high-fidelity focus operating system designed to shatter dopamine addiction and unlock your peak potential through behavioral engineering.'
