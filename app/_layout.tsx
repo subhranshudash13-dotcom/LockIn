@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { View, StyleSheet, Platform, DeviceEventEmitter } from 'react-native'
-import { Stack, useNavigationContainerRef, usePathname } from 'expo-router'
+import { Stack, router, useNavigationContainerRef, usePathname } from 'expo-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
 import * as Sentry from '@sentry/react-native'
@@ -159,12 +159,20 @@ function RootLayout() {
         
         if (session?.user) {
           setSession(session)
-          setOnboardingCompleted(session.user.user_metadata?.onboarding_completed === true)
+          const completed = session.user.user_metadata?.onboarding_completed === true
+          setOnboardingCompleted(completed)
           loginRevenueCat(session.user.id)
           identify(session.user.id, session.user.email ? { email: session.user.email } : undefined)
+          // Navigate imperatively once auth is resolved
+          if (completed) {
+            router.replace('/(tabs)')
+          } else {
+            router.replace('/(onboarding)')
+          }
         } else {
           setSession(null)
           setOnboardingCompleted(null)
+          // Stay on index (landing page) — no redirect needed
         }
       } catch (err) {
         console.warn('[Auth] Session check failed:', err)
@@ -181,14 +189,22 @@ function RootLayout() {
 
       if (authed && session?.user) {
         setSession(session)
-        setOnboardingCompleted(session.user.user_metadata?.onboarding_completed === true)
+        const completed = session.user.user_metadata?.onboarding_completed === true
+        setOnboardingCompleted(completed)
         loginRevenueCat(session.user.id)
         identify(session.user.id, session.user.email ? { email: session.user.email } : undefined)
+        // Navigate after sign-in / sign-up
+        if (completed) {
+          router.replace('/(tabs)')
+        } else {
+          router.replace('/(onboarding)')
+        }
       } else {
         setSession(null)
         setOnboardingCompleted(null)
         logoutRevenueCat()
         resetIdentity()
+        router.replace('/')
       }
     })
 
@@ -206,7 +222,7 @@ function RootLayout() {
 
   // Show blank dark screen while session + i18n checks complete.
   // This prevents a flash of wrong content on launch.
-  if (!fontsLoaded || isAuthed === null || !i18nReady || (isAuthed === true && onboardingCompleted === null)) {
+  if (!fontsLoaded || isAuthed === null || !i18nReady) {
     return <View style={{ flex: 1, backgroundColor: BG }} />
   }
 
@@ -233,9 +249,7 @@ function RootLayout() {
                         <Stack.Screen name="(auth)" />
 
                         {/* ── Onboarding ── */}
-                        {isAuthed && onboardingCompleted === false && (
-                          <Stack.Screen name="(onboarding)" />
-                        )}
+                        <Stack.Screen name="(onboarding)" />
 
                         {/* ── Infrastructure ── */}
                         <Stack.Screen name="upgrade" />
@@ -244,10 +258,8 @@ function RootLayout() {
                         <Stack.Screen name="settings" />
                         <Stack.Screen name="support" />
 
-                        {/* ── Main App ── */}
-                        {isAuthed && onboardingCompleted === true && (
-                          <Stack.Screen name="(tabs)" />
-                        )}
+                        {/* ── Main App (always registered so router.replace works) ── */}
+                        <Stack.Screen name="(tabs)" />
                       </Stack>
                       <ScreenTracker />
                       <OfflineBanner />

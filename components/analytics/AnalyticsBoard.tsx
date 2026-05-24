@@ -17,17 +17,15 @@ interface AnalyticsBoardProps {
 
 export default function AnalyticsBoard({ weeklyData, bestHour, totalMinutes }: AnalyticsBoardProps) {
     
-    const maxVal = Math.max(...weeklyData, 1)
-    const points = weeklyData.map((val, i) => {
-        const x = (i / (weeklyData.length - 1)) * CHART_WIDTH
-        const y = CHART_HEIGHT - (val / maxVal) * (CHART_HEIGHT - 20)
-        return { x, y }
-    })
-
-    const d = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`
-    
-    // Area path
-    const areaD = `${d} L ${points[points.length - 1].x},${CHART_HEIGHT} L 0,${CHART_HEIGHT} Z`
+    const maxVal = weeklyData.length > 0 ? Math.max(...weeklyData, 1) : 1;
+    const points = weeklyData.length > 0 ? weeklyData.map((val, i) => {
+        const x = (i / (weeklyData.length - 1)) * CHART_WIDTH;
+        const y = CHART_HEIGHT - (val / maxVal) * (CHART_HEIGHT - 20);
+        return { x, y };
+    }) : [{ x: 0, y: CHART_HEIGHT }];
+    const d = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
+    // Area path (handle single-point case gracefully)
+    const areaD = points.length > 1 ? `${d} L ${points[points.length - 1].x},${CHART_HEIGHT} L 0,${CHART_HEIGHT} Z` : `${d} L 0,${CHART_HEIGHT} Z`;
 
     const formatHour = (h: number) => {
         if (h === 0) return '12 AM'

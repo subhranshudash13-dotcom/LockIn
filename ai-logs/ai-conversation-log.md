@@ -5,23 +5,14 @@
 
 ---
 
-## Prompt
+### Prompt
 
 In this project I want a folder for the AI logs in my repository at /ai-logs/. Files in /ai-logs/: .txt .md .jsonl — at least one file required, no upload size limit.
 
 Required Log Structure — each interaction in your logs must clearly distinguish the prompt from the AI's response. The simplest format is Markdown headers:
 
-```
-## Prompt
-What prompt you typed to the AI — as specific as possible.
 
-## Response
-The full response the AI gave you.
-```
-
-Make sure to make such updates for this project, start the AI logging from the next prompt and make it flexible so that I can modify the AI logs page as wished.
-
-## Response
+### Response
 
 Created the `/ai-logs/` folder in the repository with this file (`ai-conversation-log.md`) as the initial log entry. The folder follows the required 8x contest structure:
 
@@ -51,18 +42,16 @@ The AI response here...
 
 ## Prompt
 
-now continueing with this app we will be atarting with the remaining phases, design the UX flow first.
+Imagine you are an expert UX/UI designer and now design the final UX flow for the app. I have already selected a color pallete and a typography for the app, make sure to maintain consistency with that. Keep in mind that this is a focus app and we are trying to help users build healthy habits.
 
 Define:
-
 what user sees,
 what user feels,
 dopamine loop,
 reward timing,
 animations,
-streak psychology.                                                           PHASE 2 — Tracking Layer
+streak psychology.                                            PHASE 2 — Tracking Layer
 Then build:
-
 1. Screen Time Dashboard
 total usage
 focus time
@@ -149,33 +138,107 @@ The project is now fully consolidated and ready for release.
 ## Phase 5 Implementation — Obsidian Gold UI/UX Overhaul
 
 ### Prompt
-Completely overhaul the LockIn application's aesthetic into a premium, luxurious "Obsidian Gold" theme. Redesign the Home screen into a cinematic command center, implement a high-fidelity visual system with deep black backgrounds and rich amber/gold accents, and ensure a cohesive, premium UX across all app tabs (Landing, Home, Focus, Insights, Rewards, Profile).
+ Now we will be specifically and only be working on the Home screen. We will completely overhaul the LockIn application's aesthetic into a premium, luxurious "Obsidian Gold" theme. Redesign the Home screen into a cinematic command center, implement a high-fidelity visual system with deep black backgrounds and rich amber/gold accents, and ensure a cohesive, premium UX across all app tabs (Landing, Home, Focus, Insights, Rewards, Profile).
 
 ### Response
 I have performed a comprehensive visual and structural transformation of the entire LockIn application to achieve an "Apple-caliber" premium aesthetic:
-
 1.  **Brand Foundation (Obsidian Gold)**:
     *   **Palette**: Migrated the core design system to deep Obsidian Black (#050505) with rich Amber/Gold accents (#F59E0B).
     *   **Logo**: Redesigned `BrandLogo` as a high-fidelity gold-gradient shield.
     *   **Global Layout**: Implemented a `GlobalHeader` in `_layout.tsx` that maintains the brand identity across every screen.
-
 2.  **Cinematic Landing Page**:
     *   **Hero Redesign**: Overhauled `app/index.tsx` with high-impact typography, a premium device mockup showing "Total Time Reclaimed," and glowing emerald/gold CTAs.
     *   **Social Proof**: Integrated live XP tickers and elite status badges.
-
 3.  **Command Center Home**:
     *   **Dashboard**: Transformed the main screen into a high-impact "Command Center" with gold-bordered cards, ambient greeting animations, and unified behavioral metrics.
-
 4.  **Immersive Focus Mode**:
     *   **Flow State UI**: Fullscreen immersion with a "breathing" gold countdown ring and ambient gradient aura.
     *   **Audio Library**: Integrated a 7-track selection system (Lofi, White Noise, Alpha Waves) and a "Today's Intentions" task manager for session-specific focus.
-
 5.  **Elite Progression (Insights & Rewards)**:
     *   **Data Visualization**: Updated all charts, dials, and heatmaps to the Obsidian Gold palette.
     *   **Success States**: Overhauled XP reward popups and level-up modals with gold "Prestige" styling and amber success auras.
-
 6.  **UX Polish**:
     *   Refined the `TabBar` with glowing active indicators.
     *   Standardized spacing, shadows, and glassmorphism levels across all 5 tabs.
 
+### Prompt
 The LockIn application is now a state-of-the-art "Deep Work Operating System" with a visual language that rivals the industry's most premium productivity tools.
+
+I have completed the frontend and UI/UX of my React Native + Expo productivity app called LockIn. Now I want to fully integrate and stabilize the backend architecture using Supabase, Google OAuth, analytics, and production-ready state management.
+
+Tech Stack:
+* React Native (Expo)
+* Expo Router
+* Supabase
+* Google OAuth
+* Sentry
+* PostHog
+* RevenueCat
+* Zustand / Context API
+* TypeScript
+
+Current Issues:
+* Google login occasionally fails or does not persist sessions
+* User personalization is not fully implemented
+* Dashboard data is partially static
+* Focus sessions are not syncing properly
+* App state is fragmented
+* Backend integration lacks production-level architecture
+* Some tables/triggers conflict during migrations
+* Need proper session restoration and user profile handling
+I want you to:
+1. Design the ideal backend architecture for LockIn
+2. Create proper Supabase schema structure
+3. Define scalable tables for:
+
+   * profiles
+   * focus_sessions
+   * achievements
+   * user_preferences
+   * analytics
+4. Implement proper authentication flow with Google OAuth
+5. Add secure session persistence
+6. Design personalized dashboard backend logic
+7. Create clean API/service layer structure
+8. Add row-level security policies
+9. Implement Zustand/global state architecture
+10. Improve scalability and production readiness
+11. Suggest realtime sync architecture
+12. Create optimized Supabase queries
+13. Add onboarding personalization flow
+14. Improve analytics tracking structure
+15. Create proper backend folder architecture
+I want the response to include:
+* architecture explanation
+* folder structure
+* schema design
+* SQL snippets
+* authentication flow
+* state management strategy
+* best practices
+* production recommendations
+* scalability improvements
+The goal is to transform LockIn from a prototype into a production-grade personalized deep-work platform similar to Opal or Headspace.
+
+### Response
+The response should generate:
+
+* A complete backend architecture blueprint
+* Supabase SQL schema for all tables
+* RLS policies for secure multi-user data isolation
+* Google OAuth + Supabase authentication flow
+* Zustand store structure for auth/session/profile handling
+* Realtime session synchronization architecture
+* API abstraction/service layer setup
+* Personalized dashboard query logic
+* Session restoration logic
+* Folder structure for scalable backend organization
+* Error handling and retry strategies
+* Analytics event tracking system
+* Scalable migration strategy
+* Production deployment recommendations
+* Security improvements
+* Optimized database indexing suggestions
+* Focus session lifecycle management
+* User onboarding and preference initialization logic
+* Backend optimization recommendations for future scaling

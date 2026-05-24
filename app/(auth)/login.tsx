@@ -186,15 +186,27 @@ export default function LoginScreen() {
       if (err) throw err
       if (!data.url) throw new Error('No OAuth URL returned from Supabase.')
 
+      console.log('[OAuth] Opening session with URL:', data.url)
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+      console.log('[OAuth] Result:', result)
       
-      if (result.type === 'cancel') {
+      // Handle possible outcomes from the auth session
+      if (result.type === 'cancel' || result.type === 'dismiss') {
+        // User closed the web view without completing sign‑in
         setLoading(false)
-        return // user dismissed — not an error
+        setError(null) // silently ignore cancellation
+        return
+      }
+
+      if (result.type === 'error') {
+        // WebBrowser reported an error – surface it to the user
+        setLoading(false)
+        setError(result.message ?? 'OAuth flow failed. Please try again.')
+        return
       }
 
       if (result.type === 'success' && result.url) {
-        // Handle both PKCE (code in query) and implicit (token in fragment)
+        // Existing success handling (implicit or PKCE flow)
         const url = result.url
         const parsedUrl = new URL(url)
         if (url.includes('#')) {
@@ -223,8 +235,8 @@ export default function LoginScreen() {
         // Auth state change listener in _layout.tsx handles navigation automatically
         track('google_login_success', { provider })
       } else {
-        track('google_login_failed', { provider, error: 'Sign-in not completed' })
-        throw new Error('Sign-in was not completed. Please try again.')
+        // Fallback for any unexpected result shape
+        throw new Error('Sign‑in was not completed. Please try again.')
       }
 
     } catch (e: any) {
